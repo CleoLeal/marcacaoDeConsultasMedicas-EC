@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components/native';
-import { HeaderContainer, HeaderTitle } from '../components/Header';
+import { HeaderContainer, HeaderTitle } from '../components/header';
 import AppointmentForm from '../components/AppointmentForm';
 import theme from '../styles/theme';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
