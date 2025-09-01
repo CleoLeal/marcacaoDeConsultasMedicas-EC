@@ -9,8 +9,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import theme from '../styles/theme';
 import Header from '../components/Header';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserManagement from '../components/UserManagement';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AdminDashboardScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'AdminDashboard'>;
@@ -122,41 +122,187 @@ const AdminDashboardScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Title>Painel Administrativo</Title>
 
-        {/* NOVO - Abas de navegação */}
+        {/* Abas de navegação */}
         <TabContainer>
-          <TabButton
-            active={activeTab === 'appointments'}
+          <TabButton 
+            active={activeTab === 'appointments'} 
             onPress={() => setActiveTab('appointments')}
           >
             <TabText active={activeTab === 'appointments'}>Consultas</TabText>
           </TabButton>
-          <TabButton
-            active={activeTab === 'users'}
+          <TabButton 
+            active={activeTab === 'users'} 
             onPress={() => setActiveTab('users')}
           >
             <TabText active={activeTab === 'users'}>Usuários</TabText>
           </TabButton>
         </TabContainer>
 
-        {/* CONTEÚDO CONDICIONAL baseado na aba ativa */}
         {activeTab === 'appointments' ? (
           <>
             <SectionTitle>Últimas Consultas</SectionTitle>
-            {/* ... código existente das consultas ... */}
+        {loading ? (
+          <LoadingText>Carregando dados...</LoadingText>
+        ) : appointments.length === 0 ? (
+          <EmptyText>Nenhuma consulta agendada</EmptyText>
+        ) : (
+          appointments.map((appointment) => (
+            <AppointmentCard key={appointment.id}>
+              <ListItem.Content>
+                <ListItem.Title style={styles.doctorName as TextStyle}>
+                  {appointment.doctorName}
+                </ListItem.Title>
+                <ListItem.Subtitle style={styles.specialty as TextStyle}>
+                  {appointment.specialty}
+                </ListItem.Subtitle>
+                <Text style={styles.dateTime as TextStyle}>
+                  {appointment.date} às {appointment.time}
+                </Text>
+                <StatusBadge status={appointment.status}>
+                  <StatusText status={appointment.status}>
+                    {getStatusText(appointment.status)}
+                  </StatusText>
+                </StatusBadge>
+                {appointment.status === 'pending' && (
+                  <ButtonContainer>
+                    <Button
+                      title="Confirmar"
+                      onPress={() => handleUpdateStatus(appointment.id, 'confirmed')}
+                      containerStyle={styles.actionButton as ViewStyle}
+                      buttonStyle={styles.confirmButton}
+                    />
+                    <Button
+                      title="Cancelar"
+                      onPress={() => handleUpdateStatus(appointment.id, 'cancelled')}
+                      containerStyle={styles.actionButton as ViewStyle}
+                      buttonStyle={styles.cancelButton}
+                    />
+                  </ButtonContainer>
+                )}
+              </ListItem.Content>
+            </AppointmentCard>
+          ))
+        )}
           </>
         ) : (
-          <UserManagement />
+          <UserManagement onSignOut={signOut} />
         )}
-
-        <Button
-          title="Sair"
-          onPress={signOut}
-          containerStyle={styles.button as ViewStyle}
-          buttonStyle={styles.logoutButton}
-        />
       </ScrollView>
     </Container>
   );
+};
+
+const styles = {
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+  button: {
+    marginBottom: 20,
+    width: '100%',
+  },
+  buttonStyle: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+  },
+  logoutButton: {
+    backgroundColor: theme.colors.error,
+    paddingVertical: 12,
+  },
+  actionButton: {
+    marginTop: 8,
+    width: '48%',
+  },
+  confirmButton: {
+    backgroundColor: theme.colors.success,
+    paddingVertical: 8,
+  },
+  cancelButton: {
+    backgroundColor: theme.colors.error,
+    paddingVertical: 8,
+  },
+  doctorName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  specialty: {
+    fontSize: 14,
+    color: theme.colors.text,
+    marginTop: 4,
+  },
+  dateTime: {
+    fontSize: 14,
+    color: theme.colors.text,
+    marginTop: 4,
+  },
+};
+
+const Container = styled.View`
+  flex: 1;
+  background-color: ${theme.colors.background};
+  position: relative;
+`;
+
+const Title = styled.Text`
+  font-size: 24px;
+  font-weight: bold;
+  color: ${theme.colors.text};
+  margin-bottom: 20px;
+  text-align: center;
+`;
+
+const SectionTitle = styled.Text`
+  font-size: 20px;
+  font-weight: bold;
+  color: ${theme.colors.text};
+  margin-bottom: 15px;
+  margin-top: 10px;
+`;
+
+const AppointmentCard = styled(ListItem)`
+  background-color: ${theme.colors.background};
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-width: 1px;
+  border-color: ${theme.colors.border};
+`;
+
+const LoadingText = styled.Text`
+  text-align: center;
+  color: ${theme.colors.text};
+  font-size: 16px;
+  margin-top: 20px;
+`;
+
+const EmptyText = styled.Text`
+  text-align: center;
+  color: ${theme.colors.text};
+  font-size: 16px;
+  margin-top: 20px;
+`;
+
+const StatusBadge = styled.View<StyledProps>`
+  background-color: ${(props: StyledProps) => getStatusColor(props.status) + '20'};
+  padding: 4px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-top: 8px;
+`;
+
+const StatusText = styled.Text<StyledProps>`
+  color: ${(props: StyledProps) => getStatusColor(props.status)};
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const ButtonContainer = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 8px;
+`;
 
 const TabContainer = styled.View`
   flex-direction: row;
@@ -179,3 +325,5 @@ const TabText = styled.Text<{ active: boolean }>`
   font-weight: ${props => props.active ? 'bold' : 'normal'};
   font-size: 16px;
 `;
+
+export default AdminDashboardScreen; 
